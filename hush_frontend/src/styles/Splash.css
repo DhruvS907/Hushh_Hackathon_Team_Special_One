@@ -1,0 +1,75 @@
+/* Splash.css */
+
+.splash-wrapper {
+  height: 100vh;
+  width: 100vw;
+  /* background: linear-gradient(to bottom right, #ffffff, #080808); */
+  background-color: black;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+  overflow: hidden;
+}
+
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 1s ease;
+}
+
+.logo-container.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.logo-container.float-up {
+  transform: translateY(-70px);
+}
+
+.brand-image {
+  width: 150px;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.brand-text{
+  font-weight: 600;
+  color: white;
+}
+
+/* Buttons */
+.button-container {
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 320px;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease;
+}
+
+.button-container.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.splash-btn {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  padding: 0.75rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.splash-btn:hover {
+  transform: scale(1.02);
+  background-color: rgb(255, 255, 255);
+  text-decoration-color: rgb(0, 0, 0);
+}
