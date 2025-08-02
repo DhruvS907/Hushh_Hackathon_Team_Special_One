@@ -1,0 +1,38 @@
+/* src/styles/ConsentModal.css */
+.modal-content {
+    background-color: #2c2c2c;
+    color: #f0f0f0;
+    border: 1px solid #444;
+}
+
+.modal-header {
+    border-bottom: 1px solid #444;
+}
+
+.modal-title {
+    font-weight: 600;
+}
+
+.permissions-list {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.permissions-list li {
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+    position: relative;
+}
+
+.permissions-list li::before {
+    content: '✅';
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.consent-question {
+    font-weight: bold;
+    margin-top: 1.5rem;
+    text-align: center;
+}

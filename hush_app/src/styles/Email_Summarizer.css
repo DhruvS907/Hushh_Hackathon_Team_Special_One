@@ -1,0 +1,300 @@
+/* Page wrapper */
+.email-dark-wrapper {
+  min-height: 100vh;
+  background: linear-gradient(to bottom, #0f0f0f, #1c1c1c);
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: "Segoe UI", "Roboto", sans-serif;
+  border-radius: 12px;
+}
+
+/* Header section */
+.email-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.email-logo {
+  width: 80px;
+  height: auto;
+  margin-bottom: 1rem;
+  /* filter: brightness(0) invert(1); */
+}
+
+.email-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Card container */
+.email-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 600px;
+}
+
+/* Enhanced card */
+.email-card-dark {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  color: #f0f0f0;
+  padding: 1rem 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.email-card-dark:hover {
+  transform: scale(1.03) translateY(-6px);
+  box-shadow: 0 10px 25px rgba(0, 255, 255, 0.1);
+}
+
+/* Typography */
+.email-subject {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.email-from {
+  font-size: 0.9rem;
+  color: #ccc;
+  margin-bottom: 8px;
+}
+
+.email-summary-text {
+  font-size: 0.95rem;
+  color: #e0e0e0;
+  margin-bottom: 12px;
+}
+
+/* Badges: rounded pill + spacing */
+.badge {
+  border-radius: 50px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  margin-right: 6px;
+}
+
+/* Status & error states */
+.loading-spinner,
+.no-emails,
+.error-message {
+  text-align: center;
+  color: #ccc;
+  margin-top: 2rem;
+  font-size: 1rem;
+}
+
+.email-card-dark {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.4s ease forwards;
+}
+
+@keyframes fadeUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Top Navbar */
+.top-navbar {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  background: #121212;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+  border-bottom: 1px solid #222;
+}
+
+.nav-title {
+  color: white;
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.nav-icon {
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 999;
+  display: flex;
+}
+
+/* Slide-in sidebar */
+.sidebar {
+  background: #222;
+  width: 220px;
+  height: 100%;
+  padding: 1.5rem;
+  color: white;
+  animation: slideIn 0.3s ease;
+}
+
+.sidebar h4 {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #444;
+  padding-bottom: 0.5rem;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar ul li {
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.sidebar ul li:hover {
+  color: #0dcaf0;
+}
+.info{
+  background-color: black;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Dark wrapper */
+.email-dark-wrapper {
+  background-color: #121212;
+  min-height: 100vh;
+  padding: 16px;
+  color: #eaeaea;
+}
+
+/* Top navbar */
+.top-navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #1f1f1f;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.nav-title {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.nav-icon {
+  font-size: 1.5rem;
+  color: #aaa;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.nav-icon:hover {
+  color: #fff;
+}
+
+/* Email list spacing */
+.email-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Accordion items styling */
+.accordion-item {
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #333;
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.05);
+  margin-bottom: 1rem;
+}
+
+/* Accordion header */
+.accordion-button {
+  background-color: #2b2b2b;
+  color: #fff;
+  font-weight: 500;
+  padding: 12px 16px;
+  transition: background-color 0.3s ease;
+}
+
+.accordion-button {
+  background-color: #1e1e1e;
+  color: white;
+}
+
+
+.accordion-button:hover {
+  background-color: #3c3c3c;
+}
+
+.accordion-button:not(.collapsed) {
+  background-color: #1e1e1e !important; /* same as default collapsed */
+  color: #fff !important;               /* keep text white */
+  box-shadow: none !important;          /* optional: removes glow or outline */
+}
+
+/* Accordion body */
+.accordion-body {
+  background-color: #1f1f1f;
+  color: #ddd;
+  padding: 16px;
+}
+
+.email-summary-text {
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+/* Loading */
+.loading-spinner {
+  text-align: center;
+  margin-top: 50px;
+  color: #ccc;
+}
+
+.error-message {
+  color: red;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.intent-badge{
+  background-color: white;
+  color: black;
+}
+.accordion-button::after {
+  filter: brightness(0) invert(1); /* Turns black arrow to white */
+}

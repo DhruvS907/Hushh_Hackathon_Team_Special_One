@@ -1,0 +1,61 @@
+# ------------------------------
+# 🔒 Secrets & Environment Files
+# ------------------------------
+.env
+credentials.json
+calendar_credentials.json
+token.json
+token.pickle
+hush_frontend/Backend/token.pkl
+hush_frontend/Backend/credentials_calendar.json
+
+# ------------------------------
+# 🐍 Python
+# ------------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+venv/
+.envrc
+
+# ------------------------------
+# 🌐 NodeJS / Frontend
+# ------------------------------
+hush_frontend/node_modules/
+hush_frontend/.next/
+hush_frontend/build/
+hush_frontend/dist/
+hush_frontend/.env.local
+hush_frontend/.eslintcache
+hush_frontend/yarn.lock
+hush_frontend/package-lock.json
+
+# ------------------------------
+# 🗃️ Database
+# ------------------------------
+users.db
+
+# ------------------------------
+# 🧠 Logs & Debug
+# ------------------------------
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# ------------------------------
+# 🧰 IDEs / Editor Config
+# ------------------------------
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# ------------------------------
+# ⚙️ OS-Specific Files
+# ------------------------------
+Thumbs.db
+ehthumbs.db
+desktop.ini

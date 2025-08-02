@@ -1,180 +1,161 @@
-# 🤫 Hushh AI Consent Protocol (HushhMCP)
+Consent Secretary Agent 🤖
+Welcome to the Consent Secretary Agent, an AI-powered email assistant designed to bring intelligence and efficiency to your inbox. This application securely summarizes your unread emails, determines their intent, and helps you draft smart replies, all while ensuring user consent is at the forefront of every action.
 
-Welcome to the official Python implementation of the **HushhMCP** — a programmable trust and consent protocol for AI agents. This repo powers the agentic infrastructure for the **Hushh PDA Hackathon**, where real humans give real consent to AI systems acting on their behalf.
+✨ Features
+AI-Powered Summaries: Automatically fetches and summarizes your unread emails from the last 24 hours.
+Intent Classification: Categorizes emails into actionable intents like "Scheduling," "Information Request," or "FYI."
+Smart Reply Generation: Uses a powerful language model to generate context-aware, professional email replies.
+User-in-the-Loop Workflow: All generated replies are presented as suggestions, requiring your approval before being sent. You can edit, approve, or reject any suggestion.
+Consent-Driven Architecture: Built on the Hushh Micro-Consent Protocol (HushhMCP), ensuring that every action is performed with explicit, verifiable user consent.
+Document-Aware Context: Can use the content of attached documents to generate more accurate and relevant replies.
 
-> 🔐 Built with privacy, security, modularity, and elegance in mind.
+🛠️ Tech Stack
+Backend: Python, FastAPI, SQLAlchemy, LangChain, Google AI, Groq API
+Frontend: React, React Bootstrap, Axios
+Authentication & APIs: Google OAuth 2.0, Gmail API, Google Calendar API
+Consent: Hushh Micro-Consent Protocol (HushhMCP)
 
----
+📋 Prerequisites
+Before you begin, ensure you have the following installed on your local machine:
+Git
+Python 3.10+
+Node.js and npm
 
-## 🧠 What is HushhMCP?
+🚀 Getting Started
+Follow these instructions to get the project up and running on your local machine for development and testing purposes.
 
-HushhMCP (Hushh Micro Consent Protocol) is the cryptographic backbone for **Personal Data Agents (PDAs)** that can:
+1. Clone the Repository
+   First, clone the project repository to your local machine.
 
-- 🔐 Issue & verify **cryptographically signed consent tokens**
-- 🔁 Delegate trust across **agent-to-agent (A2A) links**
-- 🗄️ Store & retrieve **AES-encrypted personal data**
-- 🤖 Operate within well-scoped, revocable, user-issued permissions
+Bash
 
-Inspired by biology (operons), economics (trust-based contracts), and real-world privacy laws.
+git clone https://github.com/your-username/your-repository-name.git
+cd your-repository-name 2. Backend Setup
+The backend is powered by FastAPI and handles all the core logic.
 
----
+A. Set Up Python Virtual Environment
+It's highly recommended to use a virtual environment to manage dependencies.
 
-## 🏗️ Key Concepts
+Bash
 
-| Concept         | Description                                                                 |
-|-----------------|-----------------------------------------------------------------------------|
-| **Consent Token** | A signed proof that a user granted an agent a specific permission          |
-| **TrustLink**     | A time-bound signed relationship between two agents                        |
-| **Vault**         | An encrypted datastore with AES-256-GCM for storing user data              |
-| **Operons**       | Reusable, modular agent actions — like genes in biology                    |
-| **Agents**        | Modular, scoped AI workers that operate on your behalf, with your consent  |
+# Navigate to the Backend directory
 
----
+cd hush_frontend/Backend
 
-## 📦 Folder Structure
+# Create a virtual environment
 
-```bash
-hushh-ai-consent-protocol/
-├── hushh_mcp/                # Core protocol logic (modular)
-│   ├── config.py             # .env loader + global settings
-│   ├── constants.py          # Consent scopes, prefixes, default values
-│   ├── types.py              # Pydantic models: ConsentToken, TrustLink, VaultRecord
-│   ├── consent/token.py      # issue_token(), validate_token(), revoke_token()
-│   ├── trust/link.py         # TrustLink creation + verification
-│   ├── vault/encrypt.py      # AES-256-GCM encryption/decryption
-│   ├── agents/               # Real & sample agents
-│   │   ├── shopping.py       # Uses consent to fetch personalized deals
-│   │   └── identity.py       # Validates email + issues TrustLink
-│   ├── operons/verify_email.py  # Reusable email validation logic
-│   └── cli/generate_agent.py    # CLI to scaffold new agents
-├── tests/                   # All pytest test cases
-├── .env.example            # Sample environment variables
-├── requirements.txt        # All runtime + dev dependencies
-├── README.md               # You are here
-└── docs/                   # Hackathon + protocol documentation
-````
+python -m venv venv
 
----
+# Activate the virtual environment
 
-## 🚀 Getting Started
+# On macOS/Linux:
 
-### 1. 📥 Clone & Install
+source venv/bin/activate
 
-```bash
-git clone https://github.com/yourname/hushh-ai-consent-protocol.git
-cd hushh-ai-consent-protocol
+# On Windows:
+
+.\venv\Scripts\activate
+B. Install Dependencies
+Install all the required Python packages using the requirements.txt file.
+
+Bash
+
 pip install -r requirements.txt
-```
+C. Configure Environment Variables (Critical Step)
+This project requires several API keys and secret keys to function.
 
-### 2. 🔐 Configure Secrets
+Navigate back to the root directory of the project (the one containing hush_frontend/ and hushh_mcp/).
 
-Create your `.env` file:
+Rename the example environment file from .env.example to .env.
 
-```bash
-cp .env.example .env
-```
+Open the .env file and fill in the values as described below:
 
-And paste in secure keys (generated via `python -c "import secrets; print(secrets.token_hex(32))"`).
+SECRET_KEY=your_unique_32_character_long_random_key_goes_here
+VAULT_ENCRYPTION_KEY=your_unique_64_character_encryption_key_goes_here
+GOOGLE_API_KEY="your_google_api_key"
+SERPAPI_API_KEY="your_serpapi_api_key"
+GROQ_API_KEY="your_groq_api_key"
+SECRET_KEY & VAULT_ENCRYPTION_KEY: These are required by HushhMCP. You must generate them yourself. Run the following command in your terminal to generate a secure, random key and paste it into the file.
 
----
+Bash
 
-## 🧪 Running Tests
+# Run this command twice to generate two different keys
 
-```bash
-pytest
-```
+python -c "import secrets; print(secrets.token_hex(32))"
+GOOGLE_API_KEY: Obtain this from the Google Cloud Console for your project.
 
-Includes full test coverage for:
+SERPAPI_API_KEY: Get this from your SerpAPI Dashboard.
 
-* Consent issuance, validation, revocation
-* TrustLink creation, scope checks
-* Vault encryption roundtrip
-* Real agent workflows (e.g. shopping, identity)
+GROQ_API_KEY: Get this from your Groq Console.
 
----
+D. Configure Google OAuth Credentials (Critical Step)
+To access Gmail and Google Calendar, you need to generate two separate OAuth credential files.
 
-## ⚙️ CLI Agent Generator
+Go to the Google Cloud Console.
 
-Scaffold a new agent with:
+Create a new project or select an existing one.
 
-```bash
-python hushh_mcp/cli/generate_agent.py finance-assistant
-```
+In the navigation menu, go to APIs & Services > Library.
 
-Outputs:
+For Gmail API (credentials.json):
 
-```bash
-hushh_mcp/agents/finance_assistant/index.py
-hushh_mcp/agents/finance_assistant/manifest.py
-```
+Search for and enable the Gmail API.
 
----
+Go to APIs & Services > Credentials.
 
-## 🤖 Sample Agents
+Click + CREATE CREDENTIALS > OAuth client ID.
 
-### 🛍️ `agent_shopper`
+Select Web application as the application type.
 
-* Requires: `vault.read.email`
-* Returns personalized product recommendations
+Under Authorized redirect URIs, add http://localhost:8080.
 
-### 🪪 `agent_identity`
+Click Create. Download the JSON file and rename it to credentials.json.
 
-* Validates user email
-* Issues TrustLink to other agents with scoped delegation
+Place this credentials.json file inside the hush_frontend/Backend/ directory.
 
----
+For Google Calendar API (calendar_credentials.json):
 
-## 🔐 Security Architecture
+Search for and enable the Google Calendar API.
 
-* All **tokens and trust links are stateless + signed** using HMAC-SHA256
-* Vault data is **encrypted using AES-256-GCM**, with IV + tag integrity
-* Agent actions are **fully gated by scope + revocation checks**
-* System is **testable, auditable, and modular**
+Follow the exact same steps as above to create another OAuth client ID.
 
----
+Download the new JSON file and rename it to calendar_credentials.json.
 
-## 📚 Documentation
+Place this calendar_credentials.json file inside the hush_frontend/Backend/ directory.
 
-Explore full guides in `/docs`:
+E. Run the Backend Server
+Navigate back to the Backend directory and start the FastAPI server.
 
-* `docs/index.md` — Overview & roadmap
-* `docs/consent.md` — Consent token lifecycle
-* `docs/agents.md` — Building custom agents
-* `docs/faq.md` — Hackathon questions
-* `docs/manifesto.md` — Design philosophy
+Bash
 
----
+# Make sure you are in the hush_frontend/Backend/ directory
 
-## 💡 Roadmap
+uvicorn app:app --reload --port 8000
+The backend API will now be running on http://localhost:8000.
 
-* [ ] Add persistent TrustLink registry (e.g. Redis)
-* [ ] Extend scope framework for write-level permissions
-* [ ] Launch Open Agent Directory
-* [ ] Release SDKs for iOS and Android
+3. Frontend Setup
+   The frontend is a React application.
 
----
+A. Install Dependencies
+Open a new terminal window and navigate to the frontend directory.
 
-## 🏁 Built For: Hushh PDA Hackathon
+Bash
 
-* 🎓 Hosted in collaboration with DAV Team and Analytics Club, IIT Bombay
-* 💰 INR 1,70,000+ prize pool
-* 👩‍💻 Real-world AI agents
-* 🚀 Build the infrastructure for programmable trust
+# From the project root directory
 
----
+cd hush_frontend
+npm install
+B. Start the Frontend Server
+Bash
 
-## 🫱🏽‍🫲 Contributing
+npm start
+The React application will open automatically in your browser at http://localhost:3000.
 
-* Fork → Build → Pull Request
-* Add a test for every feature
-* Run `pytest` before submitting
+✅ Usage
+Open your browser to http://localhost:3000.
 
----
+You will be prompted to sign up or sign in with your Google account.
 
-## ⚖️ License
+The first time you sign in, a Google consent screen will appear, asking you to grant the permissions your application needs (to read emails and manage calendar events).
 
-MIT — open to the world.
-
-Let’s build a better agentic internet together.
-
-```
+Once authorized, you can navigate through the application to summarize your inbox and generate smart replies.

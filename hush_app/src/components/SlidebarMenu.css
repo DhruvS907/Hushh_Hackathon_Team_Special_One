@@ -1,0 +1,96 @@
+/* SlidebarMenu.css */
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 999;
+  display: flex;
+}
+
+/* Slide-in sidebar */
+.sidebar {
+  background: #222;
+  width: 280px;
+  height: 100%;
+  padding: 1.5rem;
+  color: white;
+  animation: slideIn 0.3s ease;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar h4 {
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+  border-bottom: 1px solid #444;
+  padding-bottom: 0.75rem;
+  color: #fff;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar ul li {
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.sidebar ul li:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #0dcaf0;
+  transform: translateX(4px);
+}
+
+.sidebar ul li.logout-item {
+  margin-top: 2rem;
+  border-top: 1px solid #444;
+  padding-top: 1.5rem;
+  color: #dc3545;
+}
+
+.sidebar ul li.logout-item:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: #ff6b6b;
+}
+
+.menu-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 250px;
+  }
+  
+  .sidebar ul li {
+    font-size: 0.95rem;
+    padding: 0.6rem 0.8rem;
+  }
+  
+  .menu-icon {
+    font-size: 1.1rem;
+  }
+}
