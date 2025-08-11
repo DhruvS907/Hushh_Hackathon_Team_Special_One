@@ -8,7 +8,7 @@
   font-family: "Segoe UI", "Roboto", sans-serif;
 }
 
-/* Top navbar - reuse from Email_Summarizer.css */
+/* Top Navbar */
 .top-navbar {
   display: flex;
   justify-content: space-between;
@@ -49,7 +49,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Email list */
+/* Email List */
 .email-list {
   display: flex;
   flex-direction: column;
@@ -128,22 +128,16 @@
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
 }
 
-/* Loading states */
-.loading-spinner {
+/* Loading and empty states */
+.loading-spinner, .no-emails {
   text-align: center;
   margin-top: 3rem;
   color: #ccc;
 }
 
-.loading-spinner p {
+.loading-spinner p, .no-emails p {
   margin-top: 1rem;
   font-size: 1rem;
-}
-
-.no-emails {
-  text-align: center;
-  margin-top: 3rem;
-  color: #ccc;
 }
 
 .error-message {
@@ -210,6 +204,8 @@
   font-family: inherit;
   line-height: 1.5;
   color: #f0f0f0;
+  max-height: 250px;
+  overflow-y: auto;
 }
 
 /* Reasoning section */
@@ -246,6 +242,36 @@
 .user-suggestion-section .form-control::placeholder {
   color: #888;
 }
+
+/* File Upload Wrapper */
+.file-upload-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.file-upload-btn {
+  border-radius: 8px;
+}
+
+.file-name-display {
+  display: flex;
+  align-items: center;
+  background-color: #2a2a2a;
+  padding: 0.375rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.file-clear-btn {
+  padding: 0 0.5rem;
+  color: #aaa;
+  text-decoration: none;
+}
+.file-clear-btn:hover {
+  color: #fff;
+}
+
 
 /* Modal buttons */
 .modal-footer-dark .btn {

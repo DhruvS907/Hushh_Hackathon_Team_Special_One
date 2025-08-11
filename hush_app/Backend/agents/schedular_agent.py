@@ -70,7 +70,7 @@ def check_user_availability(start_time: str, end_time: str, email: str) -> list:
 
     Returns:
         list: A list of busy time slots in the form:
-              [{"start": "<ISO time>", "end": "<ISO time>"}, ...]
+              [{"start": "<ISO time>", "end": "<ISO time>"}]
               Returns an empty list if the user is free.
     """
     try:
@@ -276,6 +276,7 @@ class AgentState(TypedDict):
 def agent(state: AgentState) -> AgentState:
     tomorrow_date = get_tomorrow_date()
     
+    # CHANGE: Added instructions for handling user suggestions to reschedule.
     system_message = f"""You are a scheduling assistant. Your job is to help the signed-in user manage their meeting requests based on their calendar availability.
 
 Current date: {datetime.now().strftime('%Y-%m-%d')}
@@ -289,6 +290,7 @@ You are only concerned with the availability of the signed-in user, whose Gmail 
 When someone mentions "tomorrow", use the date {tomorrow_date}.
 When checking availability, use the proper date format: {tomorrow_date}T17:00:00+05:30 for 5 PM IST.
 
+If the user provides a suggestion to change the meeting time, you must first find the existing event and cancel it before scheduling the new one.
 If the sender proposes a time slot:
 1. Check if the signed-in user is available during that time using check_user_availability
 2. If available → proceed to create a calendar event using schedule_meeting_on_calendar_tool
@@ -378,30 +380,30 @@ graph.add_edge("tools", "agent")  # Return to agent after tool execution
 
 calendar_agent = graph.compile()
 
-if __name__ == "__main__":
-    # Use current date for testing
-    tomorrow_date = get_tomorrow_date()
+# if __name__ == "__main__":
+#     # Use current date for testing
+#     tomorrow_date = get_tomorrow_date()
     
-    initial_state = {
-        'messages': [
-            HumanMessage(content="Hi there John this side, Want you to schedule a meet tomorrow at 5pm to 6pm. If you are busy then propose some other times if possible else we can schedule the meet at the required time")
-        ], 
-        'senders_email_address': 'dhruvsaraswat642@gmail.com', 
-        'users_email_address': 'dhruvsaraswat907@gmail.com'
-    }
+#     initial_state = {
+#         'messages': [
+#             HumanMessage(content="Hi there John this side, Want you to schedule a meet tomorrow at 5pm to 6pm. If you are busy then propose some other times if possible else we can schedule the meet at the required time")
+#         ], 
+#         'senders_email_address': 'dhruvsaraswat642@gmail.com', 
+#         'users_email_address': 'dhruvsaraswat907@gmail.com'
+#     }
 
-    print("Starting calendar agent...")
-    try:
-        result = calendar_agent.invoke(initial_state)
+#     print("Starting calendar agent...")
+#     try:
+#         result = calendar_agent.invoke(initial_state)
         
-        # Print the final response
-        final_message = result['messages'][-1]
-        if hasattr(final_message, 'content'):
-            print("\nFinal Response:")
-            print(final_message.content)
-    except Exception as e:
-        print(f"Error: {e}")
-        print("\nMake sure you have:")
-        print("1. Downloaded credentials.json from Google Cloud Console")
-        print("2. Enabled Google Calendar API")
-        print("3. Run the OAuth2 setup first")
+#         # Print the final response
+#         final_message = result['messages'][-1]
+#         if hasattr(final_message, 'content'):
+#             print("\nFinal Response:")
+#             print(final_message.content)
+#     except Exception as e:
+#         print(f"Error: {e}")
+#         print("\nMake sure you have:")
+#         print("1. Downloaded credentials.json from Google Cloud Console")
+#         print("2. Enabled Google Calendar API")
+#         print("3. Run the OAuth2 setup first")

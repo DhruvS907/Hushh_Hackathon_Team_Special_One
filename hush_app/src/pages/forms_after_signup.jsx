@@ -19,7 +19,6 @@ function FormSignup() {
   });
 
   useEffect(() => {
-    // Pre-fill the form with data from the context (from Google or email signup)
     if (user?.email) {
       setFormData({
         name: user.name || "",
@@ -28,7 +27,6 @@ function FormSignup() {
         gmail: user.email,
       });
     } else {
-      // If there's no user in context, they shouldn't be here. Redirect them.
       toast.error("Please sign up first.");
       navigate('/signup');
     }
@@ -44,13 +42,13 @@ function FormSignup() {
     toast.dismiss();
 
     try {
-      // Send the completed profile to the backend to be saved
       await axios.post("http://localhost:8000/api/signup-details", formData);
 
-      // Update the user context with the final, complete profile
       setUser({
-        ...user, // Carry over existing context data like consentToken
+        ...user,
         name: formData.name,
+        linkedin: formData.linkedin,
+        github: formData.github,
       });
 
       toast.success("🎉 Your details have been saved!", {
@@ -58,9 +56,7 @@ function FormSignup() {
         autoClose: 2000,
       });
 
-      // Redirect to the home page after a short delay
       setTimeout(() => {
-        // If the user signed up with email/pass, they need to sign in now
         if (!user.consentToken) {
             toast.info("Please sign in to continue.");
             navigate("/signin");
@@ -121,7 +117,7 @@ function FormSignup() {
           name="gmail"
           placeholder="Gmail ID"
           value={formData.gmail}
-          readOnly // Email is pre-filled and should not be changed
+          readOnly
           className="readonly-input"
         />
         <button type="submit">Submit Details & Continue</button>

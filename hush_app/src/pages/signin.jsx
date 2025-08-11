@@ -13,8 +13,7 @@ import { toast } from 'react-toastify';
 function SignIn() {
   const navigate = useNavigate();
   const { setUser } = useContext(UserContext);
-  
-  // State for the email/password form
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -25,29 +24,30 @@ function SignIn() {
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  // --- Google Sign-In Logic ---
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       const res = await axios.post("http://localhost:8000/auth/google", {
         token: credentialResponse.credential
       });
-      
-      const { exists, idinfo, consent_token, user_data } = res.data;
 
-      if (exists) {
-        toast.success(`🎉 Welcome back, ${user_data.name}!`);
+      const { user, consent_token } = res.data;
+
+      if (user && user.linkedin && user.github) {
+        toast.success(`🎉 Welcome back, ${user.name}!`, {
+          style: { backgroundColor: "black", color: "white" },
+        });
         setUser({
-          name: user_data.name,
-          email: user_data.email,
+          name: user.name,
+          email: user.email,
           consentToken: consent_token,
         });
         navigate("/home");
       } else {
         toast.info("Welcome! Please complete your profile to continue.");
         setUser({
-            name: idinfo.name,
-            email: idinfo.email,
-            consentToken: consent_token
+          name: user.name,
+          email: user.email,
+          consentToken: consent_token
         });
         navigate("/FormSignup");
       }
@@ -57,7 +57,6 @@ function SignIn() {
     }
   };
 
-  // --- Email/Password Sign-In Logic ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -66,12 +65,12 @@ function SignIn() {
         password: formData.password
       });
 
-      const { user_data, consent_token } = res.data;
+      const { user, consent_token } = res.data;
 
-      toast.success(`🎉 Welcome back, ${user_data.name}!`);
+      toast.success(`🎉 Welcome back, ${user.name}!`);
       setUser({
-        name: user_data.name,
-        email: user_data.email,
+        name: user.name,
+        email: user.email,
         consentToken: consent_token,
       });
       navigate("/home");

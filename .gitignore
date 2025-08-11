@@ -6,8 +6,6 @@ credentials.json
 calendar_credentials.json
 token.json
 token.pickle
-hush_frontend/Backend/token.pkl
-hush_frontend/Backend/credentials_calendar.json
 
 # ------------------------------
 # 🐍 Python

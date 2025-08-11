@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
 import { Card, Badge, Spinner, Button, Modal, Form, Alert } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FiArrowLeft, FiMoreVertical, FiRefreshCcw, FiCheck, FiX, FiMessageSquare, FiUpload, FiPaperclip } from "react-icons/fi";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../styles/SmartReply.css";
@@ -22,10 +22,26 @@ function SmartReply() {
   const [actionLoading, setActionLoading] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
-  const [regenerationError, setRegenerationError] = useState(""); // For modal-specific errors
+  const [regenerationError, setRegenerationError] = useState("");
+  const [includeAttachment, setIncludeAttachment] = useState(true);
 
+  // --- MODIFIED: Use state and sessionStorage to persist the KB token ---
+  const [kbToken, setKbToken] = useState(() => sessionStorage.getItem('kbConsentToken'));
+  
   const navigate = useNavigate();
   const { user } = useContext(UserContext);
+  const location = useLocation();
+
+  useEffect(() => {
+    // This effect syncs the token from navigation state to sessionStorage
+    // This ensures that even if the user reloads, the token is not lost.
+    const tokenFromNavState = location.state?.kbConsentToken;
+    if (tokenFromNavState && tokenFromNavState !== kbToken) {
+        sessionStorage.setItem('kbConsentToken', tokenFromNavState);
+        setKbToken(tokenFromNavState);
+    }
+  }, [location.state, kbToken]);
+
 
   useEffect(() => {
     fetchEmails();
@@ -68,7 +84,6 @@ function SmartReply() {
     setProcessingEmailId(emailId);
     setSelectedEmail(email);
     
-    // Reset modal state
     setUserSuggestion("");
     setSelectedFile(null);
     setRegenerationError("");
@@ -80,16 +95,29 @@ function SmartReply() {
     }
 
     try {
-      const response = await axios.post("http://localhost:8000/api/process-email", {
+      const payload = {
         email_id: emailId,
-        consent_token: user.consentToken, // Include consent token
+        consent_token: user.consentToken,
         user_suggestion: null,
         gmail_message_id: email.id,
         gmail_thread_id: email.threadId,
         user_email: user?.email,
-      });
+      };
+
+      // MODIFIED: Use the persisted kbToken from state
+      if (kbToken) {
+        payload.knowledge_base_consent_token = kbToken;
+        console.log("Sending request with Knowledge Base access.");
+      } else {
+        console.log("Sending request without Knowledge Base access.");
+      }
+
+      const response = await axios.post("http://localhost:8000/api/process-email", payload);
 
       setGeneratedResponse(response.data);
+      if (response.data.generated_response?.attachment) {
+        setIncludeAttachment(true);
+      }
       setShowResponseModal(true);
       setSuccessMessage("");
     } catch (err) {
@@ -105,7 +133,7 @@ function SmartReply() {
     if (!generatedResponse?.response_id) return;
     
     setRegenerating(true);
-    setRegenerationError(""); // Clear previous errors
+    setRegenerationError("");
     
     const formData = new FormData();
     formData.append("response_id", generatedResponse.response_id);
@@ -116,17 +144,28 @@ function SmartReply() {
     if (selectedFile) {
       formData.append("file", selectedFile);
     }
+    
+    // MODIFIED: Use the persisted kbToken from state
+    if (kbToken) {
+        formData.append('knowledge_base_consent_token', kbToken);
+    }
 
     try {
       const response = await axios.post("http://localhost:8000/api/response-action", formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      
+      const newResponseData = response.data.generated_response;
 
       setGeneratedResponse(prev => ({
         ...prev,
         ...response.data,
-        generated_response: response.data.generated_response,
+        generated_response: newResponseData,
       }));
+      
+      if (newResponseData?.attachment) {
+        setIncludeAttachment(true);
+      }
 
       setUserSuggestion("");
       setSelectedFile(null);
@@ -148,12 +187,16 @@ function SmartReply() {
     const formData = new FormData();
     formData.append("response_id", generatedResponse.response_id);
     formData.append("action", action);
+    
+    if (action === "approve") {
+      formData.append("send_attachment", includeAttachment);
+    }
 
     try {
-      await axios.post("http://localhost:8000/api/response-action", formData);
+      const response = await axios.post("http://localhost:8000/api/response-action", formData);
 
       if (action === "approve") {
-        setSuccessMessage("Email sent successfully! ✉️");
+        setSuccessMessage(response.data.message || "Email sent successfully! ✉️");
         setShowResponseModal(false);
         setEmails(prev => prev.filter(email => generateEmailId(email) !== generateEmailId(selectedEmail)));
       } else if (action === "reject") {
@@ -268,6 +311,24 @@ function SmartReply() {
                 <div className="reasoning mt-3">
                   <h6>AI Reasoning:</h6>
                   <small className="text-white">{generatedResponse.generated_response.reasoning}</small>
+                </div>
+              )}
+
+              {generatedResponse.generated_response?.attachment && (
+                <div className="attachment-section mt-4 p-3 border rounded border-secondary">
+                  <h6 className="text-white">Proposed Attachment</h6>
+                  <div className="attachment-info p-2 rounded bg-secondary-subtle text-dark d-flex align-items-center">
+                    <FiPaperclip size={14} className="me-2" />
+                    <span>{generatedResponse.generated_response.attachment.filename}</span>
+                  </div>
+                  <Form.Check 
+                      type="switch"
+                      id="include-attachment-check"
+                      label="Include this attachment in the email"
+                      checked={includeAttachment}
+                      onChange={(e) => setIncludeAttachment(e.target.checked)}
+                      className="mt-2 text-white"
+                  />
                 </div>
               )}
             </>

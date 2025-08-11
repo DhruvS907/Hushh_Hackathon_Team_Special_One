@@ -14,35 +14,30 @@ from typing import TypedDict
 from dotenv import load_dotenv
 
 # --- Corrected Path Setup ---
-# Add the project's root directory (three levels up) to the path
-# This allows Python to find the 'hushh_mcp' directory
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 sys.path.append(project_root)
-
-# Add the 'Backend' directory (one level up) to the path
-# This allows Python to find the 'agents' directory
 backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(backend_root)
-
 
 # --- RAG Imports ---
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain.chains import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.documents import Document
 from langchain_core.vectorstores import VectorStoreRetriever
 
-# --- Local & Library Imports (Now correctly located) ---
+# --- Local & Library Imports ---
 from agents.info_responder_agent import info_responder_agent
 from agents.schedular_agent import calendar_agent
+from Email_Summarizer import fetch_user_sent_emails
 from hushh_mcp.consent.token import validate_token
 from hushh_mcp.constants import ConsentScope
 
-load_dotenv()
+# --- NEW: Imports for PDF and DOCX processing ---
+import pypdf
+import docx
 
+load_dotenv()
 
 # --- Enums and Dataclasses ---
 class AgentType(Enum):
@@ -80,22 +75,29 @@ class EmailState(TypedDict):
     document_content: Optional[bytes]
     document_filename: Optional[str]
     history_retriever: Optional[VectorStoreRetriever]
+    tone_retriever: Optional[VectorStoreRetriever]
+    knowledge_retriever: Optional[VectorStoreRetriever]
+    has_kb_consent: bool
+    attachment_to_send: Optional[Dict[str, Any]]
     response_plan: Optional[ResponsePlan]
     agent_outcome: Optional[str]
     final_response: Optional[str]
     error: Optional[str]
+    conversation_history: Optional[List[str]]
 
 # --- Main Orchestration Agent ---
 class OrchestrationAgent:
-    def __init__(self, user_name: str, user_email: str):
+    def __init__(self, user_name: str, user_email: str, access_token: str):
         self.user_email = user_email
         self.user_name = user_name
+        self.access_token = access_token
         self.llm = ChatOpenAI(
             openai_api_key=os.environ["GROQ_API_KEY"],
             openai_api_base="https://api.groq.com/openai/v1",
             model="qwen/qwen3-32b",
             temperature=0.3,
         )
+        # ✅ Single embeddings model for all retrieval tasks
         self.embeddings = GoogleGenerativeAIEmbeddings(
             model="models/embedding-001",
             google_api_key=os.environ.get("GOOGLE_API_KEY")
@@ -110,9 +112,63 @@ class OrchestrationAgent:
         }
         self.workflow = self._build_workflow()
 
+    # --- MODIFIED: This function now supports PDF and DOCX files ---
+    def _build_knowledge_retriever(self, user_email: str) -> Optional[VectorStoreRetriever]:
+        """Scans a user-specific directory for .pdf, .docx, .txt, and .md files and builds a searchable retriever."""
+        if not user_email:
+            return None
+
+        base_path = os.path.join(os.path.dirname(__file__), "..", "user_knowledge_bases")
+        sanitized_email = user_email.replace("@", "_at_").replace(".", "_dot_")
+        user_knowledge_base_path = os.path.join(base_path, sanitized_email)
+
+        if not os.path.exists(user_knowledge_base_path):
+            return None
+
+        docs = []
+        for filename in os.listdir(user_knowledge_base_path):
+            file_path = os.path.join(user_knowledge_base_path, filename)
+            content = ""
+            if not os.path.isfile(file_path):
+                continue
+            
+            try:
+                # Process PDF files
+                if filename.lower().endswith('.pdf'):
+                    with open(file_path, 'rb') as f:
+                        reader = pypdf.PdfReader(f)
+                        for page in reader.pages:
+                            content += page.extract_text() or ""
+                
+                # Process DOCX files
+                elif filename.lower().endswith('.docx'):
+                    doc = docx.Document(file_path)
+                    for para in doc.paragraphs:
+                        content += para.text + "\n"
+
+                # Process TXT and MD files
+                elif filename.lower().endswith(('.txt', '.md')):
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                
+                # If content was extracted, create a Document
+                if content:
+                    docs.append(Document(page_content=content, metadata={"source": filename}))
+
+            except Exception as e:
+                print(f"Error processing file {filename} for user {user_email}: {e}")
+
+        if not docs:
+            return None
+
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+        splits = text_splitter.split_documents(docs)
+        vector_store = FAISS.from_documents(splits, self.embeddings)
+        return vector_store.as_retriever(search_kwargs={"k": 3})
+
     def _build_workflow(self) -> StateGraph:
-        """Builds the LangGraph state machine with a separate composition step."""
         workflow = StateGraph(EmailState)
+        workflow.add_node("fetch_and_index_tone_emails", self._fetch_and_index_tone_emails_node)
         workflow.add_node("analyzer", self._analyze_email_node)
         workflow.add_node("scheduler_agent", self._scheduler_agent_node)
         workflow.add_node("info_agent", self._info_agent_node)
@@ -120,15 +176,13 @@ class OrchestrationAgent:
         workflow.add_node("no_response", self._no_response_node)
         workflow.add_node("composer", self._compose_final_email_node)
 
-        workflow.add_edge(START, "analyzer")
+        workflow.add_edge(START, "fetch_and_index_tone_emails")
+        workflow.add_edge("fetch_and_index_tone_emails", "analyzer")
         workflow.add_conditional_edges(
-            "analyzer",
-            self._route_to_agent,
+            "analyzer", self._route_to_agent,
             {
-                "scheduler": "scheduler_agent",
-                "info_responder": "info_agent",
-                "general_responder": "general_agent",
-                "no_response": "no_response"
+                "scheduler": "scheduler_agent", "info_responder": "info_agent",
+                "general_responder": "general_agent", "no_response": "no_response"
             }
         )
         workflow.add_edge("scheduler_agent", "composer")
@@ -139,12 +193,26 @@ class OrchestrationAgent:
 
         return workflow.compile()
 
-    # --- Node Implementations ---
+    def _fetch_and_index_tone_emails_node(self, state: EmailState) -> EmailState:
+        try:
+            sent_emails = fetch_user_sent_emails(self.access_token, days=7)
+            if not sent_emails:
+                return {**state, "tone_retriever": None}
+            documents = [Document(page_content=email['body'], metadata={'subject': email['subject']}) for email in sent_emails]
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+            splits = text_splitter.split_documents(documents)
+            vector_store = FAISS.from_documents(splits, self.embeddings)
+            retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+            return {**state, "tone_retriever": retriever}
+        except Exception as e:
+            print(f"Error creating tone retriever: {e}")
+            return {**state, "tone_retriever": None}
+
     def _analyze_email_node(self, state: EmailState) -> EmailState:
-        """Analyzes email to determine the correct agent route."""
         email_context = state["email_context"]
         initial_agent = self.intent_mapping.get(email_context.intent, AgentType.GENERAL_RESPONDER)
-        
+        history_context = "\n".join(state.get("conversation_history", []))
+
         analysis_prompt = f"""
         Analyze this email and determine the best response strategy.
         Email Details:
@@ -152,6 +220,10 @@ class OrchestrationAgent:
         - Sender: {email_context.sender}
         - Intent: {email_context.intent}
         - Summary: {email_context.summary}
+
+        Conversation History:
+        {history_context}
+
         Available Agents: SCHEDULER, INFO_RESPONDER, GENERAL_RESPONDER, NO_RESPONSE.
         Return only valid JSON:
         {{
@@ -178,16 +250,14 @@ class OrchestrationAgent:
                 reasoning=f"Fallback based on intent: {email_context.intent}",
                 suggested_action="Handle using the mapped agent"
             )
-        
+
         analysis_msg = AIMessage(content=f"Analyzed email. Route to: {response_plan.agent_type.value}")
         return {**state, "messages": state["messages"] + [analysis_msg], "response_plan": response_plan}
 
     def _route_to_agent(self, state: EmailState) -> str:
-        """Routes to the appropriate agent based on analysis."""
         return state["response_plan"].agent_type.value if state["response_plan"] else "general_responder"
 
     def _scheduler_agent_node(self, state: EmailState) -> EmailState:
-        """Node for handling scheduling. Just gets the raw output from the calendar agent."""
         email_context = state["email_context"]
         user_suggestion = state.get("user_suggestion")
         try:
@@ -198,129 +268,173 @@ class OrchestrationAgent:
             agent_outcome = result['messages'][-1].content
         except Exception as e:
             agent_outcome = f"Error in scheduler: {str(e)}"
-        
+
         return {**state, "agent_outcome": agent_outcome}
 
     def _info_agent_node(self, state: EmailState) -> EmailState:
-        """Node for handling information requests. Just gets the raw output from the info agent."""
         email_context = state["email_context"]
         user_suggestion = state.get("user_suggestion")
         document_content = state.get("document_content")
         document_filename = state.get("document_filename")
-        
+        knowledge_retriever = state.get("knowledge_retriever")
+        has_kb_consent = state.get("has_kb_consent", False)
+        user_email = state["user_email"]
+
+        attachment_to_send = None
+
+        # If a file was uploaded for regeneration, automatically set it as the attachment.
+        if document_content and document_filename:
+            print(f"File '{document_filename}' provided for regeneration. Prioritizing as attachment.")
+            attachment_to_send = {"filename": document_filename, "content": document_content}
+
         query = f"{email_context.summary}\n\n{f'User guidance: {user_suggestion}' if user_suggestion else ''}"
-        
+
+        active_retriever = None
+        if has_kb_consent and knowledge_retriever:
+            print(f"Knowledge base consent granted for {user_email}. Searching their files.")
+            active_retriever = knowledge_retriever
+        else:
+            print(f"Knowledge base consent not granted for {user_email} or retriever not available. Skipping file search.")
+
         try:
-            agent_outcome = info_responder_agent(
+            raw_outcome = info_responder_agent(
                 query=query,
                 doc_content=document_content,
-                doc_filename=document_filename
+                doc_filename=document_filename,
+                knowledge_retriever=active_retriever
             )
+
+            agent_outcome = raw_outcome
+            attachment_match = re.search(r"\[ATTACH_FILE:\s*(.*?)\]", raw_outcome)
+
+            # If the agent recommended a file from the KB and we haven't already set one from an upload
+            if attachment_match and not attachment_to_send:
+                attachment_filename = attachment_match.group(1).strip()
+                agent_outcome = raw_outcome.replace(attachment_match.group(0), "").strip()
+
+                base_path = os.path.join(os.path.dirname(__file__), "..", "user_knowledge_bases")
+                sanitized_email = user_email.replace("@", "_at_").replace(".", "_dot_")
+                user_knowledge_base_path = os.path.join(base_path, sanitized_email)
+                file_path = os.path.join(user_knowledge_base_path, attachment_filename)
+
+                if os.path.exists(file_path):
+                    with open(file_path, 'rb') as f:
+                        file_content = f.read()
+                    attachment_to_send = {"filename": attachment_filename, "content": file_content}
+                    print(f"Prepared '{attachment_filename}' for attachment for user {user_email}.")
+                else:
+                    print(f"Warning: Agent requested attachment '{attachment_filename}' for user {user_email}, but it was not found.")
+                    agent_outcome += f"\n\n(Note: I was unable to find the requested attachment: {attachment_filename})"
+            else:
+                # Just strip the tag if it exists, as we're either ignoring it or there isn't one.
+                agent_outcome = re.sub(r"\[ATTACH_FILE:\s*(.*?)\]", "", raw_outcome).strip()
+
+            return {**state, "agent_outcome": agent_outcome, "attachment_to_send": attachment_to_send}
         except Exception as e:
             agent_outcome = f"Error processing info request: {str(e)}"
-        
-        return {**state, "agent_outcome": agent_outcome}
+            return {**state, "agent_outcome": agent_outcome, "attachment_to_send": None}
 
     def _general_agent_node(self, state: EmailState) -> EmailState:
-        """Node for general communication. Generates a draft response to be used by the composer."""
         email_context = state["email_context"]
         user_suggestion = state.get("user_suggestion")
-        
+
         recipient_name = email_context.sender.split('<')[0].strip()
         if '@' in recipient_name:
             recipient_name = "there"
 
+        history_context = "\n".join(state.get("conversation_history", []))
+
         response_prompt = f"""
-You are an AI assistant writing an email on behalf of {self.user_name}.
-Write a professional response to the email below.
+        Respond to the following email professionally:
 
-**Instructions:**
-1. Address the email to '{recipient_name}'. Start with a polite greeting.
-2. Sign the email with the name '{self.user_name}'.
+        From: {state['email_context'].sender}
+        Subject: {state['email_context'].subject}
+        Context: {state['email_context'].body[:500]}
 
-**Original Email:**
-- From: {email_context.sender}
-- Body: {email_context.body[:500]}
+        Conversation History:
+        {history_context}
 
-**User guidance:** {user_suggestion if user_suggestion else "N/A"}
-
-Write the email response now.
-"""
+        {f"User guidance: {state['user_suggestion']}" if state.get("user_suggestion") else ""}
+        """
         try:
             response = self.llm.invoke([HumanMessage(content=response_prompt)])
             agent_outcome = self._strip_think_block(response.content)
         except Exception as e:
             agent_outcome = f"Error generating response: {str(e)}"
-        
+
         return {**state, "agent_outcome": agent_outcome}
 
     def _no_response_node(self, state: EmailState) -> EmailState:
-        """Node for emails that don't require a response."""
         return {**state, "final_response": "This email doesn't require a response."}
 
     def _compose_final_email_node(self, state: EmailState) -> EmailState:
-        """Takes the output from a specialist agent and composes the final email."""
         agent_outcome = state.get("agent_outcome", "No information was generated.")
         email_context = state["email_context"]
+        tone_retriever = state.get("tone_retriever")
 
-        # --- FIX: Extract recipient's name for a personalized greeting ---
         recipient_name = email_context.sender.split('<')[0].strip()
-        # Fallback for cases where the name is just an email address
         if '@' in recipient_name:
             recipient_name = "there"
 
+        tone_examples = ""
+        if tone_retriever:
+            try:
+                similar_docs = tone_retriever.invoke(email_context.body)
+                if similar_docs:
+                    tone_examples += "Please use a similar tone and style to the following examples from past emails sent by the user:\n\n"
+                    for i, doc in enumerate(similar_docs):
+                        tone_examples += f"--- Example {i+1} ---\n{doc.page_content}\n\n"
+            except Exception as e:
+                print(f"Could not retrieve tone examples: {e}")
+
         response_prompt = f"""
-You are an AI assistant writing a professional email on behalf of {self.user_name}.
+        You are an AI assistant writing a professional email on behalf of {self.user_name}.
 
-Your task is to compose a final email response.
-Use the "Contextual Information" below, which was generated by a specialist agent, to formulate your answer.
-Integrate this information naturally into a polite and helpful email.
+        Your task is to compose a final email response.
+        Use the "Contextual Information" below to formulate your answer.
+        Integrate this information naturally into a polite and helpful email.
 
-**Contextual Information to Use for the Reply:**
----
-{agent_outcome}
----
+        {tone_examples}
 
-**Original Email Details:**
-- From: {email_context.sender}
-- Subject: {email_context.subject}
+        **Contextual Information to Use for the Reply:**
+        ---
+        {agent_outcome}
+        ---
 
-**Instructions:**
-1. **Address the email to '{recipient_name}'.** Start with a polite greeting like "Dear {recipient_name}," or "Hi {recipient_name},".
-2. Write a complete and professional email response based on the contextual information.
-3. **Sign the email with the name '{self.user_name}'.**
+        **Original Email Details:**
+        - From: {email_context.sender}
+        - Subject: {email_context.subject}
 
-Write the final email response now.
-GIVE YOUR RESPONSE ONLY THE BODY OF THE EMAIL AND NOTHING ELSE
-"""
+        **Instructions:**
+        1. Address the email to '{recipient_name}'.
+        2. Write a complete and professional email response.
+        3. Sign the email with the name '{self.user_name}'.
+
+        GIVE YOUR RESPONSE ONLY THE BODY OF THE EMAIL AND NOTHING ELSE AND DONT GIVE ANY WORDS IN BOLD
+        """
         response = self.llm.invoke([HumanMessage(content=response_prompt)])
         final_response = self._strip_think_block(response.content)
-        
+
         return {**state, "final_response": final_response}
 
-    # --- Helper and Public Methods ---
     def _strip_think_block(self, text: str) -> str:
-        """Removes a <think>...</think> block from the beginning of a string."""
         return re.sub(r"^<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
-    def _create_history_retriever(self, history: Optional[List[str]]) -> Optional[VectorStoreRetriever]:
-        if not history: return None
-        documents = [Document(page_content=msg) for msg in history]
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-        splits = text_splitter.split_documents(documents)
-        vector = FAISS.from_documents(splits, self.embeddings)
-        return vector.as_retriever()
-
-    def generate_response(self, email_context: EmailContext, consent_token: str, user_suggestion: Optional[str] = None, document_content: Optional[bytes] = None, document_filename: Optional[str] = None, conversation_history: Optional[List[str]] = None) -> Dict:
-        # 1. Validate the token and scope
+    def generate_response(self, email_context: EmailContext, consent_token: str, user_suggestion: Optional[str] = None, document_content: Optional[bytes] = None, document_filename: Optional[str] = None, conversation_history: Optional[List[str]] = None, knowledge_base_consent_token: Optional[str] = None) -> Dict:
         is_valid, reason, parsed_token = validate_token(consent_token, expected_scope=ConsentScope.VAULT_READ_EMAIL)
         if not is_valid:
             raise PermissionError(f"Consent validation failed: {reason}")
         if parsed_token.user_id != self.user_email:
             raise PermissionError("User ID in token does not match")
 
-        # 2. If valid, proceed with the existing logic
-        history_retriever = self._create_history_retriever(conversation_history)
+        has_kb_consent = False
+        if knowledge_base_consent_token:
+            is_kb_valid, _, kb_parsed_token = validate_token(knowledge_base_consent_token, expected_scope=ConsentScope.KNOWLEDGE_BASE_READ)
+            if is_kb_valid and kb_parsed_token.user_id == self.user_email:
+                has_kb_consent = True
+
+        knowledge_retriever = self._build_knowledge_retriever(self.user_email)
+
         initial_state = {
             "messages": [HumanMessage(content=f"Processing email: {email_context.subject}")],
             "email_context": email_context,
@@ -329,25 +443,29 @@ GIVE YOUR RESPONSE ONLY THE BODY OF THE EMAIL AND NOTHING ELSE
             "user_suggestion": user_suggestion,
             "document_content": document_content,
             "document_filename": document_filename,
-            "history_retriever": history_retriever,
+            "conversation_history": conversation_history,
+            "knowledge_retriever": knowledge_retriever,
+            "has_kb_consent": has_kb_consent,
+            "attachment_to_send": None,
         }
         try:
             final_state = self.workflow.invoke(initial_state)
             response_plan = final_state.get("response_plan")
             final_response = final_state.get("final_response", "No response generated")
-            
+            attachment = final_state.get("attachment_to_send")
+
             agent_type = response_plan.agent_type.value if response_plan else "general_responder"
             if agent_type == "no_response":
-                return {"response_type": "no_response", "message": final_response, "reasoning": "N/A", "confidence": 1.0}
+                return {"response_type": "no_response", "message": final_response, "reasoning": "N/A", "confidence": 1.0, "attachment": None}
 
             return {
-                "response_type": agent_type,
-                "message": final_response,
+                "response_type": agent_type, "message": final_response,
                 "reasoning": response_plan.reasoning if response_plan else "Default processing",
                 "confidence": response_plan.confidence if response_plan else 0.7,
+                "attachment": attachment,
             }
         except Exception as e:
-            return {"response_type": "error", "message": f"Error: {str(e)}", "reasoning": "System error", "confidence": 0.0}
+            return {"response_type": "error", "message": f"Error: {str(e)}", "reasoning": "System error", "confidence": 0.0, "attachment": None}
 
     def _extract_email_from_sender(self, sender: str) -> str:
         email_match = re.search(r'<([^>]+)>', sender)
@@ -356,12 +474,14 @@ GIVE YOUR RESPONSE ONLY THE BODY OF THE EMAIL AND NOTHING ELSE
     def _extract_json(self, response_text: str) -> Optional[Dict]:
         match = re.search(r"\{.*\}", response_text, re.DOTALL)
         if match:
-            try: return json.loads(match.group())
-            except json.JSONDecodeError: return None
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                return None
         return None
 
-# --- Main Entrypoint Function ---
-def process_email_with_orchestration(email_data: Dict, user_email: str, user_name: str, consent_token: str, user_suggestion: Optional[str] = None, document_content: Optional[bytes] = None, document_filename: Optional[str] = None, conversation_history: Optional[List[str]] = None) -> Dict:
+
+def process_email_with_orchestration(email_data: Dict, user_email: str, user_name: str, consent_token: str, access_token: str, user_suggestion: Optional[str] = None, document_content: Optional[bytes] = None, document_filename: Optional[str] = None, conversation_history: Optional[List[str]] = None, knowledge_base_consent_token: Optional[str] = None) -> Dict:
     email_context = EmailContext(
         subject=email_data.get('subject', ''),
         sender=email_data.get('sender', ''),
@@ -371,5 +491,8 @@ def process_email_with_orchestration(email_data: Dict, user_email: str, user_nam
         intent=email_data.get('intent', ''),
         snippet=email_data.get('snippet', '')
     )
-    orchestrator = OrchestrationAgent(user_name, user_email)
-    return orchestrator.generate_response(email_context, consent_token, user_suggestion, document_content, document_filename, conversation_history)
+    orchestrator = OrchestrationAgent(user_name, user_email, access_token)
+    return orchestrator.generate_response(
+        email_context, consent_token, user_suggestion, document_content,
+        document_filename, conversation_history, knowledge_base_consent_token
+    )

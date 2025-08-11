@@ -14,6 +14,11 @@ from googleapiclient.discovery import build
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 
+from datetime import datetime, timedelta
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+import base64
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -183,4 +188,64 @@ def get_thread_history(service, thread_id: str) -> List[Dict]:
         return history
     except Exception as e:
         print(f"Error fetching thread history for {thread_id}: {e}")
+        return []
+
+
+def fetch_user_sent_emails(access_token: str, days: int = 7) -> List[Dict[str, str]]:
+    """
+    Fetches emails sent by the user in the last specified number of days.
+
+    Args:
+        access_token (str): The user's Google OAuth access token.
+        days (int): The number of past days to search for sent emails.
+
+    Returns:
+        List[Dict[str, str]]: A list of dictionaries, where each dictionary
+                               contains the 'subject' and 'body' of a sent email.
+    """
+    creds = Credentials(token=access_token)
+    service = build('gmail', 'v1', credentials=creds)
+    
+    # Calculate the date 'days' ago
+    date_query = (datetime.now() - timedelta(days=days)).strftime('%Y/%m/%d')
+    
+    # Query for sent emails after the specified date
+    query = f"in:sent after:{date_query}"
+    
+    try:
+        response = service.users().messages().list(userId='me', q=query).execute()
+        messages = response.get('messages', [])
+        
+        sent_emails = []
+        if not messages:
+            return []
+            
+        for msg_summary in messages:
+            msg_id = msg_summary['id']
+            message = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
+            
+            payload = message['payload']
+            headers = payload['headers']
+            
+            subject = next((h['value'] for h in headers if h['name'] == 'Subject'), '')
+            
+            body = ""
+            if 'parts' in payload:
+                for part in payload['parts']:
+                    if part['mimeType'] == 'text/plain':
+                        body_data = part['body'].get('data')
+                        if body_data:
+                            body = base64.urlsafe_b64decode(body_data).decode('utf-8')
+                        break # Found plain text part
+            elif 'body' in payload and payload['body'].get('data'):
+                 body_data = payload['body'].get('data')
+                 body = base64.urlsafe_b64decode(body_data).decode('utf-8')
+
+            if body: # Only include emails with a body
+                sent_emails.append({'subject': subject, 'body': body})
+
+        return sent_emails
+        
+    except Exception as e:
+        print(f"An error occurred while fetching sent emails: {e}")
         return []

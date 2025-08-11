@@ -1,7 +1,7 @@
 // src/components/SlidebarMenu.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { FiHome, FiMail, FiMessageSquare, FiClock, FiSettings, FiLogOut } from "react-icons/fi";
+import { FiHome, FiMail, FiMessageSquare, FiClock, FiSettings, FiLogOut, FiBookOpen } from "react-icons/fi";
 import "./SlidebarMenu.css";
 
 
@@ -19,6 +19,7 @@ function SidebarMenu({ isOpen, onClose }) {
     { icon: FiMessageSquare, label: "Smart Replies", path: "/SmartReply" },
     { icon: FiClock, label: "Pending Responses", path: "/PendingResponses" },
     { icon: FiSettings, label: "Settings", path: "/settings" },
+    { icon: FiBookOpen, label: "Manage Knowledge Base", path:"/knowledge-base"}
   ];
 
   if (!isOpen) return null;

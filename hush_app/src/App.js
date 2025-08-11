@@ -13,6 +13,8 @@ import FormSignup from "./pages/forms_after_signup";
 import { FiAlertCircle } from "react-icons/fi";
 import SmartReply from "./pages/SmartReply";
 import PendingResponses from "./pages/PendingResponses";
+import KnowledgeBasePage from './pages/KnowledgeBasePage';
+import Settings from './pages/Settings';
 
 function App() {
   const [user, setUser] = useState(() => {
@@ -60,6 +62,10 @@ function App() {
               
               {/* Backward compatibility */}
               <Route path="/Send_Replies" element={<SmartReply />} />
+
+              <Route path="/knowledge-base" element={<KnowledgeBasePage />} />
+              <Route path="/settings" element={<Settings />} />
+
             </Routes>
       </UserContext.Provider>
     </BrowserRouter>

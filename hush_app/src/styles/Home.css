@@ -1,18 +1,7 @@
-.divider {
-  display: flex;
-  align-items: center;
-  margin: 1.5rem 0;
-  font-size: 0.85rem;
-  color: #bbb;
-  text-transform: none;
-}
-
-/* Splash.css */
-
+/* Home.css */
 .splash-wrapper {
   height: 100vh;
   width: 100vw;
-  /* background: linear-gradient(to bottom right, #ffffff, #080808); */
   background-color: black;
   display: flex;
   flex-direction: column;
@@ -29,9 +18,7 @@
   opacity: 0;
   transform: translateY(50px);
   transition: all 1s ease;
-  padding-top: 100px;
-  padding-bottom: 0%;
-  margin-bottom: 0%;
+  padding-bottom: 2rem;
 }
 
 .logo-container.visible {
@@ -40,32 +27,31 @@
 }
 
 .logo-container.float-up {
-  transform: translateY(-70px);
+  transform: translateY(-40px);
 }
 
 .brand-image {
-  width: 150px;
+  width: 120px;
   height: auto;
-  object-fit: contain;
-  border-radius: 12px;
+  margin-bottom: 1rem;
 }
 
-.brand-text{
+.brand-text {
   font-weight: 600;
   color: white;
+  margin-bottom: 0.5rem;
+  text-align: center;
 }
 
-/* Buttons */
+/* Action Buttons Container */
 .button-container {
   display: flex;
   flex-direction: column;
   width: 90%;
-  max-width: 320px;
+  max-width: 350px;
   opacity: 0;
-  transform: translateY(-70px);
   transition: all 0.8s ease;
-  padding-top: 0%;
-  margin-top: 0%;
+  gap: 1.5rem; /* Adds space between each action group */
 }
 
 .button-container.visible {
@@ -73,29 +59,50 @@
   transform: translateY(0);
 }
 
+/* Individual Action Group */
+.action-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.action-description {
+  font-size: 0.9rem;
+  color: #bbb;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .splash-btn {
-  margin-bottom: 1rem;
+  width: 100%;
   font-size: 1rem;
-  padding: 0.75rem;
+  padding: 0.8rem;
   font-weight: 600;
   border-radius: 8px;
   transition: all 0.2s ease;
+  border-color: #555;
+  color: #ddd;
 }
 
 .splash-btn:hover {
-  transform: scale(1.02);
-  background-color: rgb(255, 255, 255);
-  text-decoration-color: rgb(0, 0, 0);
+  transform: scale(1.03);
+  background-color: white;
+  color: black;
+  border-color: white;
 }
 
-.logo-container.float-up {
-  transform: translateY(-40px);  /* was -70px earlier — this adjusts lift */
+/* Add this CSS to your Home.css file */
+
+.home-menu-trigger {
+  position: absolute;
+  top: 25px;
+  right: 30px;
+  color: white; /* Makes the icon visible against the black background */
+  cursor: pointer;
+  z-index: 1050; /* Ensures it's above other content */
 }
 
-.brand-text {
-  margin-bottom: 0.2rem; /* override h1 default margin */
-}
-
-.divider {
-  margin-top: 0.5rem;  /* reduce divider spacing */
+.home-menu-trigger:hover {
+  color: #ccc; /* Optional: adds a hover effect */
 }

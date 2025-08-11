@@ -8,7 +8,7 @@
   font-family: "Segoe UI", "Roboto", sans-serif;
 }
 
-/* Top navbar - reuse from other components */
+/* Top navbar - consistent style */
 .top-navbar {
   display: flex;
   justify-content: space-between;
@@ -18,6 +18,9 @@
   border-radius: 12px;
   margin-bottom: 20px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .nav-title {
@@ -37,7 +40,7 @@
   color: #fff;
 }
 
-/* Success alert */
+/* Success alert - consistent style */
 .success-alert {
   position: fixed;
   top: 20px;
@@ -50,36 +53,39 @@
 }
 
 /* Tabs styling */
-.response-tabs {
-  max-width: 800px;
+.tabs-container {
+  max-width: 900px;
   margin: 0 auto;
 }
 
+.response-tabs {
+  border-bottom: 1px solid #333;
+}
+
 .response-tabs .nav-link {
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ccc;
-  border-radius: 8px 8px 0 0;
-  margin-right: 4px;
+  background-color: transparent;
+  border: none;
+  color: #888;
+  font-weight: 500;
+  padding: 0.75rem 1.25rem;
   transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .response-tabs .nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.1);
   color: #fff;
 }
 
 .response-tabs .nav-link.active {
-  background-color: #007bff;
-  border-color: #007bff;
-  color: #fff;
+  color: #0d6efd;
+  background-color: transparent;
+  border-bottom: 3px solid #0d6efd;
 }
 
 .response-tabs .tab-content {
-  background-color: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0 8px 8px 8px;
-  padding: 1.5rem;
+  padding: 1.5rem 0;
 }
 
 /* Responses list */
@@ -89,20 +95,22 @@
   gap: 16px;
 }
 
-/* Response cards */
+/* Response cards - consistent style */
 .response-card {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
   border-radius: 16px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
   color: #f0f0f0;
   transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeUp 0.4s ease forwards;
 }
 
 .response-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(0, 255, 255, 0.1);
+  box-shadow: 0 12px 30px rgba(0, 123, 255, 0.1);
 }
 
 .response-card .card-body {
@@ -137,11 +145,11 @@
 }
 
 /* Badges */
-.intent-badge {
+.type-badge, .status-badge {
   font-size: 0.75rem;
   border-radius: 50px;
   padding: 4px 12px;
-  background-color: #17a2b8 !important;
+  text-transform: capitalize;
 }
 
 /* View response button */
@@ -159,21 +167,16 @@
 }
 
 /* Loading and empty states */
-.loading-spinner {
+.loading-spinner, .no-responses {
   text-align: center;
-  margin-top: 3rem;
+  margin-top: 4rem;
   color: #ccc;
 }
 
-.loading-spinner p {
+.loading-spinner p, .no-responses p {
   margin-top: 1rem;
   font-size: 1rem;
-}
-
-.no-responses {
-  text-align: center;
-  margin-top: 3rem;
-  color: #ccc;
+  color: #888;
 }
 
 .error-message {
@@ -186,31 +189,25 @@
   border: 1px solid rgba(220, 53, 69, 0.3);
 }
 
-/* Modal styling */
-.modal-header-dark {
+/* Modal styling - consistent with SmartReply */
+.modal-header-dark, .modal-body-dark, .modal-footer-dark {
   background-color: #1f1f1f;
-  border-bottom: 1px solid #333;
+  border-color: #333;
   color: #fff;
+}
+
+.modal-body-dark {
+  background-color: #1a1a1a;
 }
 
 .modal-header-dark .btn-close {
   filter: invert(1);
 }
 
-.modal-body-dark {
-  background-color: #1a1a1a;
-  color: #eaeaea;
-}
-
-.modal-footer-dark {
-  background-color: #1f1f1f;
-  border-top: 1px solid #333;
-}
-
-/* Original email info */
 .original-email-info {
   border-left: 4px solid #007bff;
   padding-left: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .original-email-info h6 {
@@ -218,36 +215,28 @@
   margin-bottom: 0.5rem;
 }
 
-/* Response info badges */
 .response-info {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
-/* Generated response content */
-.generated-response-content h6 {
+.generated-response-content h6, .user-suggestion-display h6 {
   color: #fff;
   margin-bottom: 0.75rem;
 }
 
 .response-text {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid #444;
   border-radius: 8px;
   padding: 1rem;
   white-space: pre-wrap;
   font-family: inherit;
   line-height: 1.5;
   color: #f0f0f0;
-  max-height: 300px;
+  max-height: 250px;
   overflow-y: auto;
-}
-
-/* User suggestion display */
-.user-suggestion-display h6 {
-  color: #fff;
-  margin-bottom: 0.5rem;
 }
 
 .suggestion-text {
@@ -259,10 +248,9 @@
   font-style: italic;
 }
 
-/* User suggestion section */
 .user-suggestion-section {
   border-top: 1px solid #333;
-  padding-top: 1rem;
+  padding-top: 1.5rem;
 }
 
 .user-suggestion-section .form-label {
@@ -284,18 +272,14 @@
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-.user-suggestion-section .form-control::placeholder {
-  color: #888;
-}
-
-/* Modal buttons */
 .modal-footer-dark .btn {
   border-radius: 8px;
   font-weight: 500;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.2rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  transition: all 0.2s ease;
 }
 
 .modal-footer-dark .btn:hover {
@@ -303,12 +287,6 @@
 }
 
 /* Animations */
-.response-card {
-  opacity: 0;
-  transform: translateY(20px);
-  animation: fadeUp 0.4s ease forwards;
-}
-
 @keyframes fadeUp {
   to {
     opacity: 1;
@@ -316,43 +294,9 @@
   }
 }
 
-/* Animation delays for staggered effect */
-.response-card:nth-child(1) { animation-delay: 0.1s; }
-.response-card:nth-child(2) { animation-delay: 0.2s; }
-.response-card:nth-child(3) { animation-delay: 0.3s; }
-.response-card:nth-child(4) { animation-delay: 0.4s; }
-.response-card:nth-child(5) { animation-delay: 0.5s; }
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .pending-responses-wrapper {
-    padding: 0.5rem;
-  }
-  
-  .response-card .card-body {
-    padding: 1rem;
-  }
-  
-  .response-subject {
-    font-size: 1rem;
-  }
-  
-  .view-response-btn {
-    padding: 0.3rem 0.6rem;
-    font-size: 0.8rem;
-  }
-  
-  .modal-dialog {
-    margin: 0.5rem;
-  }
-  
-  .response-text {
-    font-size: 0.9rem;
-    max-height: 200px;
-  }
-  
-  .response-tabs .nav-link {
-    font-size: 0.9rem;
-    padding: 0.5rem 0.75rem;
-  }
-}
+/* Staggered animation delay for cards */
+.response-card:nth-child(1) { animation-delay: 0.05s; }
+.response-card:nth-child(2) { animation-delay: 0.1s; }
+.response-card:nth-child(3) { animation-delay: 0.15s; }
+.response-card:nth-child(4) { animation-delay: 0.2s; }
+.response-card:nth-child(5) { animation-delay: 0.25s; }

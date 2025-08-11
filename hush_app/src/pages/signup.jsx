@@ -27,14 +27,15 @@ function SignUp() {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
   };
-  
+
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       const res = await axios.post("http://localhost:8000/auth/google", {
         token: credentialResponse.credential
       });
       setAuthResponse(res.data);
-      if (res.data.exists) {
+
+      if (res.data.user && res.data.user.linkedin && res.data.user.github) {
         toast.info("This account already exists. Please sign in.");
         navigate('/signin');
       } else {
@@ -47,10 +48,10 @@ function SignUp() {
   };
 
   const handleConsentAgree = () => {
-    if (authResponse) {
+    if (authResponse && authResponse.user) {
       setUser({
-        name: authResponse.idinfo.name,
-        email: authResponse.idinfo.email,
+        name: authResponse.user.name,
+        email: authResponse.user.email,
         consentToken: authResponse.consent_token,
       });
       setShowConsentModal(false);
@@ -72,7 +73,6 @@ function SignUp() {
         password: formData.password
       });
 
-      // Temporarily store user info and navigate to the details form
       setUser({
         name: formData.name,
         email: formData.email,
